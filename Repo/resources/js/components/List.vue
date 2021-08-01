@@ -40,7 +40,7 @@
                              <td>{{student.id}} </td>
                                 <td>{{student.FirstName}} </td>
                                 <td>{{student.LastName}}</td>
-                                <td><router-link :to="`/StudentCourses/${student.Identifier}`">{{student.Identifier}}</router-link></td>
+                                <td><router-link :to="`/StudentCourses/${student.Identifier}/${student.id}`">{{student.Identifier}}</router-link></td>
                                 <td>{{student.Email}}</td>
                                 <td>{{student.DateOfBirth}}</td>
                                 <td>{{student.Level}}</td>
@@ -65,7 +65,7 @@
                  <input type="text" class="form-control" placeholder="program" v-model="student.Program">
             </div>
             <!-- <button type="submit" class="btn badge-success">Save</button> -->
-            <button type="submit" class="btn badge-success" > {{edit}}Update</button>
+            <button type="submit" class="btn badge-success" > Update</button>
             <button type="submit" class="btn badge-success" >Add new Student</button>
         </form>
         <br><br>
@@ -81,12 +81,35 @@
                                 <th>Name</th>
                                 <th>Code</th>
                                 <th>Description</th>
+                                <th>Update</th>
+                                <th>Delete</th>
                             </tr>
                         </thead>
+                        <tr v-for="course in courses" v-bind:key="course.id">
+                                <th>{{course.id}}</th>
+                                <th>{{course.Name}}</th>
+                                <th>{{course.Code}}</th>
+                                <th>{{course.Description}}</th>
+                                <td> <button class="btn badge-success" @click="editCourse(course)">Edit</button> </td>
+                               <td> <button class="btn badge-success" @click="deleteCourse(course.id)">Delete</button> </td>
+                        </tr>
                     </table>
                 </div>
             </div>
         </div>
+    </div>
+    <h4> Course</h4>
+<form @submit.prevent="addCourse" class="md-3">
+            <div class="form-group">
+                <input type="text" class="form-control" placeholder="name" v-model="course.Name">
+                 <input type="text" class="form-control" placeholder="code" v-model="course.Code">
+                <input type="text" class="form-control" placeholder="description" v-model="course.Description">
+            </div>
+            <!-- <button type="submit" class="btn badge-success">Save</button> -->
+            <button type="submit" class="btn badge-success" >Update</button>
+            <button type="submit" class="btn badge-success" >Add new Course</button>
+        </form>
+        <br><br>
         <div class="col-lg-6">
             <div class="main-card mb-3 card">
                 <div class="card-body">
@@ -123,7 +146,7 @@
             </div>
         </div>
 
-    </div>
+   
 </div>
 </template>
 <script>
@@ -141,15 +164,25 @@
                     Level:   '',
                     Program: '',
                 },
+                courses: [],
+                course: {
+                    id: '',
+                    Name: '',
+                    Code: '',
+                    Description: '',
+                },
                 student_id: '',
+                course_id: '',
                 pagination: {},
-                edit:       false,
+                editstudent:       false,
+                editscourse:       false,
                 valueToSearch: '',
                 selected:''
             }
         },
         created(){
             this.fetchStudents();
+            this.fetchCourses();
         },
         methods:{
             fetchStudents(page_url){
@@ -185,7 +218,7 @@
                 }
             },
             addStudent(){
-                if(this.edit === false){
+                if(this.editstudent === false){
                     //Add
                     fetch('api/student',{
                         method:     'post',
@@ -230,7 +263,7 @@
                 }
             },
             editStudent(student){
-                this.edit = true;
+                this.editstudent = true;
                 this.student.id = student.id;
                 this.student.student_id = student.id;
                      this.student.FirstName=  student.FirstName;
@@ -251,7 +284,90 @@
                     })
                     .catch(err => console.log(err));
 
-            }
+            },
+
+
+
+            fetchCourses(page_url) {
+                let vm = this;
+                page_url = page_url || '/api/courses';
+                fetch(page_url)
+                    .then((res) => res.json())
+                    .then((res) => {
+                    this.courses = res.data;
+                    vm.makePagination(res.meta, res.links);
+                    })
+                    .catch((err) => console.log(err));
+                },
+            deleteCourse(id){
+                        if(confirm('Are You Sure?')){
+                            fetch(`api/course/${id}`,{
+                                method:'delete'
+                            })
+                                .then(res => res.json())
+                                .then(data =>{
+                                    this.fetchCourses();
+                                })
+                                .catch(err => console.log(err))
+                        }
+                    },
+            addCourse(){
+                        if(this.editcourse === false){
+                            //Add
+                            fetch('api/course',{
+                                method:     'post',
+                                body:       JSON.stringify(this.course),
+                                headers:{
+                                    'content-type':'application/json'
+                                }
+                            })
+                                .then(res => res.json())
+                                .then(data =>{
+                            this.course.Name=  '';
+                            this.course.Code=  '';
+                            this.course.Description= '';
+                                    this.fetchCourses();
+                                })
+                                .catch(err => console.log(err));
+                        }else{
+                            //Update
+                            fetch('api/course',{
+                                method:     'put',
+                                body:       JSON.stringify(this.course),
+                                headers:{
+                                    'content-type':'application/json'
+                                }
+                            })
+                                .then(res => res.json())
+                                .then(data =>{
+                            this.course.Name=  '';
+                            this.course.Code=  '';
+                            this.course.Description= '';
+                                    this.fetchCourses();
+                                })
+                                .catch(err => console.log(err));
+                        }
+                    },
+            editCourse(course){
+                        this.editcourse = true;
+                        this.course.course_id = course.id;
+                        this.course.id = course.id;
+                        this.course.Name=  course.Name;
+                        this.course.Code=  course.Code;
+                        this.course.Description= course.Description;
+                    },
+            filterCourse(selected,valueToSearch){
+                        let vm = this; 
+                        fetch(`api/courses/${selected}/${valueToSearch}`)
+                            .then(res => res.json())
+                            .then(res => {
+                                this.courses = res.data;
+                                vm.makePagination(res.meta, res.links);
+                            })
+                            .catch(err => console.log(err));
+
+                    }
+  },
         }
-    }
+    
 </script>

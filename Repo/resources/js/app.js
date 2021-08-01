@@ -4,7 +4,7 @@ import StudentCourses from './components/StudentCourses.vue';
 import List from './components/List.vue';
 Vue.use(VueRouter);
 const routes=[
-    {path:"/StudentCourses/:studentID" , component:require('./components/StudentCourses.vue').default},
+    {path:"/StudentCourses/:studentID/:id" , component:require('./components/StudentCourses.vue').default},
     {path:'/list' , component:require('./components/List.vue').default}
 ]
 const router = new VueRouter({

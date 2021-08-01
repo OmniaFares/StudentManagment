@@ -6,18 +6,15 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Student;
 use App\Http\Resources\Student as StudentResource;
+use Illuminate\Support\Facades\DB;
 
 class StudentController extends Controller
 {
     public function index(){
-        $students = Student::orderBy('id','asc')->get();
+         $students = Student::orderBy('id','asc')->get();
+        //  $students=DB::table('students')->where('Identifier', '=', '2018114')->get();
         return StudentResource::collection($students);
     }
-    // public function index2(){
-    //     $PassedData = Student::orderBy('id')->get();
-    //     return view('welcome',['PassedData' => $PassedData,]);
-
-    // }
     public function store(Request $request)
     {
         $student = $request->isMethod('put') ? Student::findOrFail($request->student_id) : new Student();

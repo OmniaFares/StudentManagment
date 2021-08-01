@@ -17,6 +17,29 @@ use Illuminate\Support\Facades\Route;
 // Route::middleware('auth:api')->get('/user', function (Request $request) {
 //     return $request->user();
 // });
+
+//  List courses for single student
+
+Route::get('courses/{id}','App\Http\Controllers\CourseController@index');
+
+Route::get('courses','App\Http\Controllers\CourseController@index2');
+
+//List Single Article
+Route::get('course/{id}','App\Http\Controllers\CourseController@show');
+
+//Create new Article
+Route::post('course','App\Http\Controllers\CourseController@store');
+
+//Update Article
+Route::put('course','App\Http\Controllers\CourseController@store');
+
+//Delete Article
+Route::delete('course/{id}','App\Http\Controllers\CourseController@destroy');
+
+Route::get('courses/{selected}/{valueToSearch}','App\Http\Controllers\CourseController@search');
+
+//-----------------------------------
+
 //List Articles
 Route::get('students','App\Http\Controllers\StudentController@index');
 

@@ -109,6 +109,7 @@ module.exports = __webpack_require__(/*! ./lib/axios */ "./node_modules/axios/li
 
 var utils = __webpack_require__(/*! ./../utils */ "./node_modules/axios/lib/utils.js");
 var settle = __webpack_require__(/*! ./../core/settle */ "./node_modules/axios/lib/core/settle.js");
+var cookies = __webpack_require__(/*! ./../helpers/cookies */ "./node_modules/axios/lib/helpers/cookies.js");
 var buildURL = __webpack_require__(/*! ./../helpers/buildURL */ "./node_modules/axios/lib/helpers/buildURL.js");
 var buildFullPath = __webpack_require__(/*! ../core/buildFullPath */ "./node_modules/axios/lib/core/buildFullPath.js");
 var parseHeaders = __webpack_require__(/*! ./../helpers/parseHeaders */ "./node_modules/axios/lib/helpers/parseHeaders.js");
@@ -129,7 +130,7 @@ module.exports = function xhrAdapter(config) {
     // HTTP basic authentication
     if (config.auth) {
       var username = config.auth.username || '';
-      var password = config.auth.password || '';
+      var password = config.auth.password ? unescape(encodeURIComponent(config.auth.password)) : '';
       requestHeaders.Authorization = 'Basic ' + btoa(username + ':' + password);
     }
 
@@ -210,8 +211,6 @@ module.exports = function xhrAdapter(config) {
     // This is only done if running in a standard browser environment.
     // Specifically not if we're in a web worker, or react-native.
     if (utils.isStandardBrowserEnv()) {
-      var cookies = __webpack_require__(/*! ./../helpers/cookies */ "./node_modules/axios/lib/helpers/cookies.js");
-
       // Add xsrf header
       var xsrfValue = (config.withCredentials || isURLSameOrigin(fullPath)) && config.xsrfCookieName ?
         cookies.read(config.xsrfCookieName) :
@@ -277,7 +276,7 @@ module.exports = function xhrAdapter(config) {
       });
     }
 
-    if (requestData === undefined) {
+    if (!requestData) {
       requestData = null;
     }
 
@@ -345,6 +344,9 @@ axios.all = function all(promises) {
   return Promise.all(promises);
 };
 axios.spread = __webpack_require__(/*! ./helpers/spread */ "./node_modules/axios/lib/helpers/spread.js");
+
+// Expose isAxiosError
+axios.isAxiosError = __webpack_require__(/*! ./helpers/isAxiosError */ "./node_modules/axios/lib/helpers/isAxiosError.js");
 
 module.exports = axios;
 
@@ -554,9 +556,10 @@ Axios.prototype.getUri = function getUri(config) {
 utils.forEach(['delete', 'get', 'head', 'options'], function forEachMethodNoData(method) {
   /*eslint func-names:0*/
   Axios.prototype[method] = function(url, config) {
-    return this.request(utils.merge(config || {}, {
+    return this.request(mergeConfig(config || {}, {
       method: method,
-      url: url
+      url: url,
+      data: (config || {}).data
     }));
   };
 });
@@ -564,7 +567,7 @@ utils.forEach(['delete', 'get', 'head', 'options'], function forEachMethodNoData
 utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
   /*eslint func-names:0*/
   Axios.prototype[method] = function(url, data, config) {
-    return this.request(utils.merge(config || {}, {
+    return this.request(mergeConfig(config || {}, {
       method: method,
       url: url,
       data: data
@@ -824,7 +827,7 @@ module.exports = function enhanceError(error, config, code, request, response) {
   error.response = response;
   error.isAxiosError = true;
 
-  error.toJSON = function() {
+  error.toJSON = function toJSON() {
     return {
       // Standard
       message: this.message,
@@ -873,59 +876,73 @@ module.exports = function mergeConfig(config1, config2) {
   config2 = config2 || {};
   var config = {};
 
-  var valueFromConfig2Keys = ['url', 'method', 'params', 'data'];
-  var mergeDeepPropertiesKeys = ['headers', 'auth', 'proxy'];
+  var valueFromConfig2Keys = ['url', 'method', 'data'];
+  var mergeDeepPropertiesKeys = ['headers', 'auth', 'proxy', 'params'];
   var defaultToConfig2Keys = [
-    'baseURL', 'url', 'transformRequest', 'transformResponse', 'paramsSerializer',
-    'timeout', 'withCredentials', 'adapter', 'responseType', 'xsrfCookieName',
-    'xsrfHeaderName', 'onUploadProgress', 'onDownloadProgress',
-    'maxContentLength', 'validateStatus', 'maxRedirects', 'httpAgent',
-    'httpsAgent', 'cancelToken', 'socketPath'
+    'baseURL', 'transformRequest', 'transformResponse', 'paramsSerializer',
+    'timeout', 'timeoutMessage', 'withCredentials', 'adapter', 'responseType', 'xsrfCookieName',
+    'xsrfHeaderName', 'onUploadProgress', 'onDownloadProgress', 'decompress',
+    'maxContentLength', 'maxBodyLength', 'maxRedirects', 'transport', 'httpAgent',
+    'httpsAgent', 'cancelToken', 'socketPath', 'responseEncoding'
   ];
+  var directMergeKeys = ['validateStatus'];
+
+  function getMergedValue(target, source) {
+    if (utils.isPlainObject(target) && utils.isPlainObject(source)) {
+      return utils.merge(target, source);
+    } else if (utils.isPlainObject(source)) {
+      return utils.merge({}, source);
+    } else if (utils.isArray(source)) {
+      return source.slice();
+    }
+    return source;
+  }
+
+  function mergeDeepProperties(prop) {
+    if (!utils.isUndefined(config2[prop])) {
+      config[prop] = getMergedValue(config1[prop], config2[prop]);
+    } else if (!utils.isUndefined(config1[prop])) {
+      config[prop] = getMergedValue(undefined, config1[prop]);
+    }
+  }
 
   utils.forEach(valueFromConfig2Keys, function valueFromConfig2(prop) {
-    if (typeof config2[prop] !== 'undefined') {
-      config[prop] = config2[prop];
+    if (!utils.isUndefined(config2[prop])) {
+      config[prop] = getMergedValue(undefined, config2[prop]);
     }
   });
 
-  utils.forEach(mergeDeepPropertiesKeys, function mergeDeepProperties(prop) {
-    if (utils.isObject(config2[prop])) {
-      config[prop] = utils.deepMerge(config1[prop], config2[prop]);
-    } else if (typeof config2[prop] !== 'undefined') {
-      config[prop] = config2[prop];
-    } else if (utils.isObject(config1[prop])) {
-      config[prop] = utils.deepMerge(config1[prop]);
-    } else if (typeof config1[prop] !== 'undefined') {
-      config[prop] = config1[prop];
-    }
-  });
+  utils.forEach(mergeDeepPropertiesKeys, mergeDeepProperties);
 
   utils.forEach(defaultToConfig2Keys, function defaultToConfig2(prop) {
-    if (typeof config2[prop] !== 'undefined') {
-      config[prop] = config2[prop];
-    } else if (typeof config1[prop] !== 'undefined') {
-      config[prop] = config1[prop];
+    if (!utils.isUndefined(config2[prop])) {
+      config[prop] = getMergedValue(undefined, config2[prop]);
+    } else if (!utils.isUndefined(config1[prop])) {
+      config[prop] = getMergedValue(undefined, config1[prop]);
+    }
+  });
+
+  utils.forEach(directMergeKeys, function merge(prop) {
+    if (prop in config2) {
+      config[prop] = getMergedValue(config1[prop], config2[prop]);
+    } else if (prop in config1) {
+      config[prop] = getMergedValue(undefined, config1[prop]);
     }
   });
 
   var axiosKeys = valueFromConfig2Keys
     .concat(mergeDeepPropertiesKeys)
-    .concat(defaultToConfig2Keys);
+    .concat(defaultToConfig2Keys)
+    .concat(directMergeKeys);
 
   var otherKeys = Object
-    .keys(config2)
+    .keys(config1)
+    .concat(Object.keys(config2))
     .filter(function filterAxiosKeys(key) {
       return axiosKeys.indexOf(key) === -1;
     });
 
-  utils.forEach(otherKeys, function otherKeysDefaultToConfig2(prop) {
-    if (typeof config2[prop] !== 'undefined') {
-      config[prop] = config2[prop];
-    } else if (typeof config1[prop] !== 'undefined') {
-      config[prop] = config1[prop];
-    }
-  });
+  utils.forEach(otherKeys, mergeDeepProperties);
 
   return config;
 };
@@ -954,7 +971,7 @@ var createError = __webpack_require__(/*! ./createError */ "./node_modules/axios
  */
 module.exports = function settle(resolve, reject, response) {
   var validateStatus = response.config.validateStatus;
-  if (!validateStatus || validateStatus(response.status)) {
+  if (!response.status || !validateStatus || validateStatus(response.status)) {
     resolve(response);
   } else {
     reject(createError(
@@ -1086,6 +1103,7 @@ var defaults = {
   xsrfHeaderName: 'X-XSRF-TOKEN',
 
   maxContentLength: -1,
+  maxBodyLength: -1,
 
   validateStatus: function validateStatus(status) {
     return status >= 200 && status < 300;
@@ -1149,7 +1167,6 @@ var utils = __webpack_require__(/*! ./../utils */ "./node_modules/axios/lib/util
 
 function encode(val) {
   return encodeURIComponent(val).
-    replace(/%40/gi, '@').
     replace(/%3A/gi, ':').
     replace(/%24/g, '$').
     replace(/%2C/gi, ',').
@@ -1330,6 +1347,29 @@ module.exports = function isAbsoluteURL(url) {
   // RFC 3986 defines scheme name as a sequence of characters beginning with a letter and followed
   // by any combination of letters, digits, plus, period, or hyphen.
   return /^([a-z][a-z\d\+\-\.]*:)?\/\//i.test(url);
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/axios/lib/helpers/isAxiosError.js":
+/*!********************************************************!*\
+  !*** ./node_modules/axios/lib/helpers/isAxiosError.js ***!
+  \********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/**
+ * Determines whether the payload is an error thrown by Axios
+ *
+ * @param {*} payload The value to test
+ * @returns {boolean} True if the payload is an error thrown by Axios, otherwise false
+ */
+module.exports = function isAxiosError(payload) {
+  return (typeof payload === 'object') && (payload.isAxiosError === true);
 };
 
 
@@ -1659,6 +1699,21 @@ function isObject(val) {
 }
 
 /**
+ * Determine if a value is a plain Object
+ *
+ * @param {Object} val The value to test
+ * @return {boolean} True if value is a plain Object, otherwise false
+ */
+function isPlainObject(val) {
+  if (toString.call(val) !== '[object Object]') {
+    return false;
+  }
+
+  var prototype = Object.getPrototypeOf(val);
+  return prototype === null || prototype === Object.prototype;
+}
+
+/**
  * Determine if a value is a Date
  *
  * @param {Object} val The value to test
@@ -1814,34 +1869,12 @@ function forEach(obj, fn) {
 function merge(/* obj1, obj2, obj3, ... */) {
   var result = {};
   function assignValue(val, key) {
-    if (typeof result[key] === 'object' && typeof val === 'object') {
+    if (isPlainObject(result[key]) && isPlainObject(val)) {
       result[key] = merge(result[key], val);
-    } else {
-      result[key] = val;
-    }
-  }
-
-  for (var i = 0, l = arguments.length; i < l; i++) {
-    forEach(arguments[i], assignValue);
-  }
-  return result;
-}
-
-/**
- * Function equal to merge with the difference being that no reference
- * to original objects is kept.
- *
- * @see merge
- * @param {Object} obj1 Object to merge
- * @returns {Object} Result of all merge properties
- */
-function deepMerge(/* obj1, obj2, obj3, ... */) {
-  var result = {};
-  function assignValue(val, key) {
-    if (typeof result[key] === 'object' && typeof val === 'object') {
-      result[key] = deepMerge(result[key], val);
-    } else if (typeof val === 'object') {
-      result[key] = deepMerge({}, val);
+    } else if (isPlainObject(val)) {
+      result[key] = merge({}, val);
+    } else if (isArray(val)) {
+      result[key] = val.slice();
     } else {
       result[key] = val;
     }
@@ -1872,6 +1905,19 @@ function extend(a, b, thisArg) {
   return a;
 }
 
+/**
+ * Remove byte order marker. This catches EF BB BF (the UTF-8 BOM)
+ *
+ * @param {string} content with BOM
+ * @return {string} content value without BOM
+ */
+function stripBOM(content) {
+  if (content.charCodeAt(0) === 0xFEFF) {
+    content = content.slice(1);
+  }
+  return content;
+}
+
 module.exports = {
   isArray: isArray,
   isArrayBuffer: isArrayBuffer,
@@ -1881,6 +1927,7 @@ module.exports = {
   isString: isString,
   isNumber: isNumber,
   isObject: isObject,
+  isPlainObject: isPlainObject,
   isUndefined: isUndefined,
   isDate: isDate,
   isFile: isFile,
@@ -1891,9 +1938,9 @@ module.exports = {
   isStandardBrowserEnv: isStandardBrowserEnv,
   forEach: forEach,
   merge: merge,
-  deepMerge: deepMerge,
   extend: extend,
-  trim: trim
+  trim: trim,
+  stripBOM: stripBOM
 };
 
 
@@ -2036,6 +2083,29 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 /* harmony default export */ __webpack_exports__["default"] = ({
   data: function data() {
     return {
@@ -2050,15 +2120,25 @@ __webpack_require__.r(__webpack_exports__);
         Level: '',
         Program: ''
       },
+      courses: [],
+      course: {
+        id: '',
+        Name: '',
+        Code: '',
+        Description: ''
+      },
       student_id: '',
+      course_id: '',
       pagination: {},
-      edit: false,
+      editstudent: false,
+      editsourse: false,
       valueToSearch: '',
       selected: ''
     };
   },
   created: function created() {
     this.fetchStudents();
+    this.fetchCourses();
   },
   methods: {
     fetchStudents: function fetchStudents(page_url) {
@@ -2102,7 +2182,7 @@ __webpack_require__.r(__webpack_exports__);
     addStudent: function addStudent() {
       var _this3 = this;
 
-      if (this.edit === false) {
+      if (this.editstudent === false) {
         //Add
         fetch('api/student', {
           method: 'post',
@@ -2151,7 +2231,7 @@ __webpack_require__.r(__webpack_exports__);
       }
     },
     editStudent: function editStudent(student) {
-      this.edit = true;
+      this.editstudent = true;
       this.student.id = student.id;
       this.student.student_id = student.id;
       this.student.FirstName = student.FirstName;
@@ -2170,6 +2250,99 @@ __webpack_require__.r(__webpack_exports__);
         return res.json();
       }).then(function (res) {
         _this4.students = res.data;
+        vm.makePagination(res.meta, res.links);
+      })["catch"](function (err) {
+        return console.log(err);
+      });
+    },
+    fetchCourses: function fetchCourses(page_url) {
+      var _this5 = this;
+
+      var vm = this;
+      page_url = page_url || '/api/courses';
+      fetch(page_url).then(function (res) {
+        return res.json();
+      }).then(function (res) {
+        _this5.courses = res.data;
+        vm.makePagination(res.meta, res.links);
+      })["catch"](function (err) {
+        return console.log(err);
+      });
+    },
+    deleteCourse: function deleteCourse(id) {
+      var _this6 = this;
+
+      if (confirm('Are You Sure?')) {
+        fetch("api/course/".concat(id), {
+          method: 'delete'
+        }).then(function (res) {
+          return res.json();
+        }).then(function (data) {
+          _this6.fetchCourses();
+        })["catch"](function (err) {
+          return console.log(err);
+        });
+      }
+    },
+    addCourse: function addCourse() {
+      var _this7 = this;
+
+      if (this.editcourse === false) {
+        //Add
+        fetch('api/course', {
+          method: 'post',
+          body: JSON.stringify(this.course),
+          headers: {
+            'content-type': 'application/json'
+          }
+        }).then(function (res) {
+          return res.json();
+        }).then(function (data) {
+          _this7.course.Name = '';
+          _this7.course.Code = '';
+          _this7.course.Description = '';
+
+          _this7.fetchCourses();
+        })["catch"](function (err) {
+          return console.log(err);
+        });
+      } else {
+        //Update
+        fetch('api/course', {
+          method: 'put',
+          body: JSON.stringify(this.course),
+          headers: {
+            'content-type': 'application/json'
+          }
+        }).then(function (res) {
+          return res.json();
+        }).then(function (data) {
+          _this7.course.Name = '';
+          _this7.course.Code = '';
+          _this7.course.Description = '';
+
+          _this7.fetchCourses();
+        })["catch"](function (err) {
+          return console.log(err);
+        });
+      }
+    },
+    editCourse: function editCourse(course) {
+      this.editcourse = true;
+      this.course.course_id = course.id;
+      this.course.id = course.id;
+      this.course.Name = course.Name;
+      this.course.Code = course.Code;
+      this.course.Description = course.Description;
+    },
+    filterCourse: function filterCourse(selected, valueToSearch) {
+      var _this8 = this;
+
+      var vm = this;
+      fetch("api/courses/".concat(selected, "/").concat(valueToSearch)).then(function (res) {
+        return res.json();
+      }).then(function (res) {
+        _this8.courses = res.data;
         vm.makePagination(res.meta, res.links);
       })["catch"](function (err) {
         return console.log(err);
@@ -2212,11 +2385,132 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
+//
 /* harmony default export */ __webpack_exports__["default"] = ({
   data: function data() {
     return {
-      studentID: this.$route.params.studentID
+      studentID: this.$route.params.studentID,
+      id: this.$route.params.id,
+      courses: [],
+      course: {
+        id: '',
+        Name: '',
+        Code: '',
+        Description: ''
+      },
+      pagination: {},
+      edit: false
     };
+  },
+  created: function created() {
+    this.fetchStudents();
+  },
+  methods: {
+    fetchStudents: function fetchStudents(page_url) {
+      var _this = this;
+
+      var vm = this;
+      page_url = page_url || '/api/courses/' + this.id;
+      fetch(page_url).then(function (res) {
+        return res.json();
+      }).then(function (res) {
+        _this.courses = res.data;
+        vm.makePagination(res.meta, res.links);
+      })["catch"](function (err) {
+        return console.log(err);
+      });
+    },
+    makePagination: function makePagination(meta, links) {
+      var pagination = {
+        current_page: meta.current_page,
+        last_page: meta.last_page,
+        next_page_url: links.next,
+        prev_page_url: links.prev
+      };
+      this.pagination = pagination;
+    },
+    deleteStudent: function deleteStudent(id) {
+      var _this2 = this;
+
+      if (confirm('Are You Sure?')) {
+        fetch("api/course/".concat(id), {
+          method: 'delete'
+        }).then(function (res) {
+          return res.json();
+        }).then(function (data) {
+          _this2.fetchStudents();
+        })["catch"](function (err) {
+          return console.log(err);
+        });
+      }
+    },
+    addStudent: function addStudent() {
+      var _this3 = this;
+
+      if (this.edit === false) {
+        //Add
+        fetch('api/course', {
+          method: 'post',
+          body: JSON.stringify(this.student),
+          headers: {
+            'content-type': 'application/json'
+          }
+        }).then(function (res) {
+          return res.json();
+        }).then(function (data) {
+          _this3.student.Name = '';
+          _this3.student.Code = '';
+          _this3.student.Description = '';
+
+          _this3.fetchStudents();
+        })["catch"](function (err) {
+          return console.log(err);
+        });
+      } else {
+        //Update
+        fetch('api/course', {
+          method: 'put',
+          body: JSON.stringify(this.student),
+          headers: {
+            'content-type': 'application/json'
+          }
+        }).then(function (res) {
+          return res.json();
+        }).then(function (data) {
+          _this3.student.Name = '';
+          _this3.student.Code = '';
+          _this3.student.Description = '';
+
+          _this3.fetchStudents();
+        })["catch"](function (err) {
+          return console.log(err);
+        });
+      }
+    },
+    editStudent: function editStudent(course) {
+      this.edit = true;
+      this.course.id = course.id;
+      this.course.course_id = course.id;
+      this.course.Name = course.Name;
+      this.student.Code = course.Code;
+      this.student.Description = course.Description;
+    },
+    filter: function filter(selected, valueToSearch) {
+      var _this4 = this;
+
+      var vm = this;
+      fetch("api/courses/".concat(selected, "/").concat(valueToSearch)).then(function (res) {
+        return res.json();
+      }).then(function (res) {
+        _this4.courses = res.data;
+        vm.makePagination(res.meta, res.links);
+      })["catch"](function (err) {
+        return console.log(err);
+      });
+    }
   }
 });
 
@@ -38016,7 +38310,11 @@ var render = function() {
                           "router-link",
                           {
                             attrs: {
-                              to: "/StudentCourses/" + student.Identifier
+                              to:
+                                "/StudentCourses/" +
+                                student.Identifier +
+                                "/" +
+                                student.id
                             }
                           },
                           [_vm._v(_vm._s(student.Identifier))]
@@ -38245,7 +38543,7 @@ var render = function() {
         _c(
           "button",
           { staticClass: "btn badge-success", attrs: { type: "submit" } },
-          [_vm._v(" " + _vm._s(_vm.edit) + "Update")]
+          [_vm._v(" Update")]
         ),
         _vm._v(" "),
         _c(
@@ -38259,7 +38557,169 @@ var render = function() {
     _c("br"),
     _c("br"),
     _vm._v(" "),
-    _vm._m(1)
+    _c("div", { staticClass: "row" }, [
+      _c("div", { staticClass: "col-lg-6" }, [
+        _c("div", { staticClass: "main-card mb-3 card" }, [
+          _c("div", { staticClass: "card-body" }, [
+            _c("h5", { staticClass: "card-title" }, [_vm._v("Courses")]),
+            _vm._v(" "),
+            _c(
+              "table",
+              { staticClass: "mb-0 table table-bordered" },
+              [
+                _vm._m(1),
+                _vm._v(" "),
+                _vm._l(_vm.courses, function(course) {
+                  return _c("tr", { key: course.id }, [
+                    _c("th", [_vm._v(_vm._s(course.id))]),
+                    _vm._v(" "),
+                    _c("th", [_vm._v(_vm._s(course.Name))]),
+                    _vm._v(" "),
+                    _c("th", [_vm._v(_vm._s(course.Code))]),
+                    _vm._v(" "),
+                    _c("th", [_vm._v(_vm._s(course.Description))]),
+                    _vm._v(" "),
+                    _c("td", [
+                      _c(
+                        "button",
+                        {
+                          staticClass: "btn badge-success",
+                          on: {
+                            click: function($event) {
+                              return _vm.editCourse(course)
+                            }
+                          }
+                        },
+                        [_vm._v("Edit")]
+                      )
+                    ]),
+                    _vm._v(" "),
+                    _c("td", [
+                      _c(
+                        "button",
+                        {
+                          staticClass: "btn badge-success",
+                          on: {
+                            click: function($event) {
+                              return _vm.deleteCourse(course.id)
+                            }
+                          }
+                        },
+                        [_vm._v("Delete")]
+                      )
+                    ])
+                  ])
+                })
+              ],
+              2
+            )
+          ])
+        ])
+      ])
+    ]),
+    _vm._v(" "),
+    _c("h4", [_vm._v(" Course")]),
+    _vm._v(" "),
+    _c(
+      "form",
+      {
+        staticClass: "md-3",
+        on: {
+          submit: function($event) {
+            $event.preventDefault()
+            return _vm.addCourse.apply(null, arguments)
+          }
+        }
+      },
+      [
+        _c("div", { staticClass: "form-group" }, [
+          _c("input", {
+            directives: [
+              {
+                name: "model",
+                rawName: "v-model",
+                value: _vm.course.Name,
+                expression: "course.Name"
+              }
+            ],
+            staticClass: "form-control",
+            attrs: { type: "text", placeholder: "name" },
+            domProps: { value: _vm.course.Name },
+            on: {
+              input: function($event) {
+                if ($event.target.composing) {
+                  return
+                }
+                _vm.$set(_vm.course, "Name", $event.target.value)
+              }
+            }
+          }),
+          _vm._v(" "),
+          _c("input", {
+            directives: [
+              {
+                name: "model",
+                rawName: "v-model",
+                value: _vm.course.Code,
+                expression: "course.Code"
+              }
+            ],
+            staticClass: "form-control",
+            attrs: { type: "text", placeholder: "code" },
+            domProps: { value: _vm.course.Code },
+            on: {
+              input: function($event) {
+                if ($event.target.composing) {
+                  return
+                }
+                _vm.$set(_vm.course, "Code", $event.target.value)
+              }
+            }
+          }),
+          _vm._v(" "),
+          _c("input", {
+            directives: [
+              {
+                name: "model",
+                rawName: "v-model",
+                value: _vm.course.Description,
+                expression: "course.Description"
+              }
+            ],
+            staticClass: "form-control",
+            attrs: { type: "text", placeholder: "description" },
+            domProps: { value: _vm.course.Description },
+            on: {
+              input: function($event) {
+                if ($event.target.composing) {
+                  return
+                }
+                _vm.$set(_vm.course, "Description", $event.target.value)
+              }
+            }
+          })
+        ]),
+        _vm._v(" "),
+        _c(
+          "button",
+          { staticClass: "btn badge-success", attrs: { type: "submit" } },
+          [_vm._v("Update")]
+        ),
+        _vm._v(" "),
+        _c(
+          "button",
+          { staticClass: "btn badge-success", attrs: { type: "submit" } },
+          [_vm._v("Add new Course")]
+        )
+      ]
+    ),
+    _vm._v(" "),
+    _c("br"),
+    _c("br"),
+    _vm._v(" "),
+    _vm._m(2),
+    _vm._v(" "),
+    _vm._m(3)
   ])
 }
 var staticRenderFns = [
@@ -38295,67 +38755,67 @@ var staticRenderFns = [
     var _vm = this
     var _h = _vm.$createElement
     var _c = _vm._self._c || _h
-    return _c("div", { staticClass: "row" }, [
-      _c("div", { staticClass: "col-lg-6" }, [
-        _c("div", { staticClass: "main-card mb-3 card" }, [
-          _c("div", { staticClass: "card-body" }, [
-            _c("h5", { staticClass: "card-title" }, [_vm._v("Courses")]),
-            _vm._v(" "),
-            _c("table", { staticClass: "mb-0 table table-bordered" }, [
-              _c("thead", [
-                _c("tr", [
-                  _c("th", [_vm._v("#")]),
-                  _vm._v(" "),
-                  _c("th", [_vm._v("Name")]),
-                  _vm._v(" "),
-                  _c("th", [_vm._v("Code")]),
-                  _vm._v(" "),
-                  _c("th", [_vm._v("Description")])
-                ])
+    return _c("thead", [
+      _c("tr", [
+        _c("th", [_vm._v("#")]),
+        _vm._v(" "),
+        _c("th", [_vm._v("Name")]),
+        _vm._v(" "),
+        _c("th", [_vm._v("Code")]),
+        _vm._v(" "),
+        _c("th", [_vm._v("Description")]),
+        _vm._v(" "),
+        _c("th", [_vm._v("Update")]),
+        _vm._v(" "),
+        _c("th", [_vm._v("Delete")])
+      ])
+    ])
+  },
+  function() {
+    var _vm = this
+    var _h = _vm.$createElement
+    var _c = _vm._self._c || _h
+    return _c("div", { staticClass: "col-lg-6" }, [
+      _c("div", { staticClass: "main-card mb-3 card" }, [
+        _c("div", { staticClass: "card-body" }, [
+          _c("h5", { staticClass: "card-title" }, [_vm._v("Levels")]),
+          _vm._v(" "),
+          _c("table", { staticClass: "mb-0 table table-bordered" }, [
+            _c("thead", [
+              _c("tr", [
+                _c("th", [_vm._v("#")]),
+                _vm._v(" "),
+                _c("th", [_vm._v("Name")]),
+                _vm._v(" "),
+                _c("th", [_vm._v("Description")]),
+                _vm._v(" "),
+                _c("th", [_vm._v("Courses")])
               ])
             ])
           ])
         ])
-      ]),
-      _vm._v(" "),
-      _c("div", { staticClass: "col-lg-6" }, [
-        _c("div", { staticClass: "main-card mb-3 card" }, [
-          _c("div", { staticClass: "card-body" }, [
-            _c("h5", { staticClass: "card-title" }, [_vm._v("Levels")]),
-            _vm._v(" "),
-            _c("table", { staticClass: "mb-0 table table-bordered" }, [
-              _c("thead", [
-                _c("tr", [
-                  _c("th", [_vm._v("#")]),
-                  _vm._v(" "),
-                  _c("th", [_vm._v("Name")]),
-                  _vm._v(" "),
-                  _c("th", [_vm._v("Description")]),
-                  _vm._v(" "),
-                  _c("th", [_vm._v("Courses")])
-                ])
-              ])
-            ])
-          ])
-        ])
-      ]),
-      _vm._v(" "),
-      _c("div", { staticClass: "col-lg-6" }, [
-        _c("div", { staticClass: "main-card mb-3 card" }, [
-          _c("div", { staticClass: "card-body" }, [
-            _c("h5", { staticClass: "card-title" }, [_vm._v("Programs")]),
-            _vm._v(" "),
-            _c("table", { staticClass: "mb-0 table table-bordered" }, [
-              _c("thead", [
-                _c("tr", [
-                  _c("th", [_vm._v("#")]),
-                  _vm._v(" "),
-                  _c("th", [_vm._v("Name")]),
-                  _vm._v(" "),
-                  _c("th", [_vm._v("Description")]),
-                  _vm._v(" "),
-                  _c("th", [_vm._v("Courses")])
-                ])
+      ])
+    ])
+  },
+  function() {
+    var _vm = this
+    var _h = _vm.$createElement
+    var _c = _vm._self._c || _h
+    return _c("div", { staticClass: "col-lg-6" }, [
+      _c("div", { staticClass: "main-card mb-3 card" }, [
+        _c("div", { staticClass: "card-body" }, [
+          _c("h5", { staticClass: "card-title" }, [_vm._v("Programs")]),
+          _vm._v(" "),
+          _c("table", { staticClass: "mb-0 table table-bordered" }, [
+            _c("thead", [
+              _c("tr", [
+                _c("th", [_vm._v("#")]),
+                _vm._v(" "),
+                _c("th", [_vm._v("Name")]),
+                _vm._v(" "),
+                _c("th", [_vm._v("Description")]),
+                _vm._v(" "),
+                _c("th", [_vm._v("Courses")])
               ])
             ])
           ])
@@ -38463,7 +38923,32 @@ var render = function() {
       _vm._v("Courses That " + _vm._s(_vm.studentID) + " Have Been Enrolled")
     ]),
     _vm._v(" "),
-    _vm._m(0)
+    _c("div", { staticClass: "row" }, [
+      _c("div", { staticClass: "col-lg-6" }, [
+        _c("div", { staticClass: "main-card mb-3 card" }, [
+          _c("div", { staticClass: "card-body" }, [
+            _c("h5", { staticClass: "card-title" }, [_vm._v("Courses")]),
+            _vm._v(" "),
+            _c(
+              "table",
+              { staticClass: "mb-0 table table-bordered" },
+              [
+                _vm._m(0),
+                _vm._v(" "),
+                _vm._l(_vm.courses, function(course) {
+                  return _c("tr", { key: course.Name }, [
+                    _c("th", [_vm._v(_vm._s(course.Name))]),
+                    _vm._v(" "),
+                    _c("th", [_vm._v(_vm._s(course.Code))])
+                  ])
+                })
+              ],
+              2
+            )
+          ])
+        ])
+      ])
+    ])
   ])
 }
 var staticRenderFns = [
@@ -38471,25 +38956,11 @@ var staticRenderFns = [
     var _vm = this
     var _h = _vm.$createElement
     var _c = _vm._self._c || _h
-    return _c("div", { staticClass: "row" }, [
-      _c("div", { staticClass: "col-lg-6" }, [
-        _c("div", { staticClass: "main-card mb-3 card" }, [
-          _c("div", { staticClass: "card-body" }, [
-            _c("h5", { staticClass: "card-title" }, [_vm._v("Courses")]),
-            _vm._v(" "),
-            _c("table", { staticClass: "mb-0 table table-bordered" }, [
-              _c("thead", [
-                _c("tr", [
-                  _c("th", [_vm._v("#")]),
-                  _vm._v(" "),
-                  _c("th", [_vm._v("Name")]),
-                  _vm._v(" "),
-                  _c("th", [_vm._v("Code")])
-                ])
-              ])
-            ])
-          ])
-        ])
+    return _c("thead", [
+      _c("tr", [
+        _c("th", [_vm._v("Name")]),
+        _vm._v(" "),
+        _c("th", [_vm._v("Code")])
       ])
     ])
   }
@@ -53888,7 +54359,7 @@ __webpack_require__.r(__webpack_exports__);
 
 vue__WEBPACK_IMPORTED_MODULE_0___default.a.use(vue_router__WEBPACK_IMPORTED_MODULE_1__["default"]);
 var routes = [{
-  path: "/StudentCourses/:studentID",
+  path: "/StudentCourses/:studentID/:id",
   component: __webpack_require__(/*! ./components/StudentCourses.vue */ "./resources/js/components/StudentCourses.vue")["default"]
 }, {
   path: '/list',
@@ -54218,8 +54689,8 @@ __webpack_require__.r(__webpack_exports__);
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-__webpack_require__(/*! C:\Users\PAV\Desktop\Repo\resources\js\app.js */"./resources/js/app.js");
-module.exports = __webpack_require__(/*! C:\Users\PAV\Desktop\Repo\resources\sass\app.scss */"./resources/sass/app.scss");
+__webpack_require__(/*! D:\Repo\resources\js\app.js */"./resources/js/app.js");
+module.exports = __webpack_require__(/*! D:\Repo\resources\sass\app.scss */"./resources/sass/app.scss");
 
 
 /***/ })
