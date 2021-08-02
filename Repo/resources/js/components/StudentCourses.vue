@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h4>Courses That {{studentID}} Have Been Enrolled</h4>
+        <h4>Courses That {{studentID}} has Been Enrolled in</h4>
         <div class="row">
                 <div class="col-lg-6">
                     <div class="main-card mb-3 card">
@@ -39,7 +39,6 @@ export default {
         Description: '',
       },
       pagination: {},
-      edit:       false,
     };
   },
   created() {
@@ -66,74 +65,6 @@ export default {
       };
       this.pagination = pagination;
     },
-    deleteStudent(id){
-                if(confirm('Are You Sure?')){
-                    fetch(`api/course/${id}`,{
-                        method:'delete'
-                    })
-                        .then(res => res.json())
-                        .then(data =>{
-                            this.fetchStudents();
-                        })
-                        .catch(err => console.log(err))
-                }
-            },
-      addStudent(){
-                if(this.edit === false){
-                    //Add
-                    fetch('api/course',{
-                        method:     'post',
-                        body:       JSON.stringify(this.student),
-                        headers:{
-                            'content-type':'application/json'
-                        }
-                    })
-                        .then(res => res.json())
-                        .then(data =>{
-                    this.student.Name=  '';
-                    this.student.Code=  '';
-                    this.student.Description= '';
-                            this.fetchStudents();
-                        })
-                        .catch(err => console.log(err));
-                }else{
-                    //Update
-                    fetch('api/course',{
-                        method:     'put',
-                        body:       JSON.stringify(this.student),
-                        headers:{
-                            'content-type':'application/json'
-                        }
-                    })
-                        .then(res => res.json())
-                        .then(data =>{
-                    this.student.Name=  '';
-                    this.student.Code=  '';
-                    this.student.Description= '';
-                            this.fetchStudents();
-                        })
-                        .catch(err => console.log(err));
-                }
-            },
-    editStudent(course){
-                this.edit = true;
-                this.course.id = course.id;
-                this.course.course_id = course.id;
-                this.course.Name=  course.Name;
-                this.student.Code=  course.Code;
-                this.student.Description= course.Description;
-            },
-    filter(selected,valueToSearch){
-                let vm = this; 
-                fetch(`api/courses/${selected}/${valueToSearch}`)
-                    .then(res => res.json())
-                    .then(res => {
-                        this.courses = res.data;
-                        vm.makePagination(res.meta, res.links);
-                    })
-                    .catch(err => console.log(err));
-
-            }
   },
 };
 </script>

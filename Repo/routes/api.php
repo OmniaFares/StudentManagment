@@ -40,8 +40,12 @@ Route::get('courses/{selected}/{valueToSearch}','App\Http\Controllers\CourseCont
 
 //-----------------------------------
 
+Route::get('students/{id}','App\Http\Controllers\StudentController@index');
+
+Route::get('students2/{id}','App\Http\Controllers\StudentController@view');
+
 //List Articles
-Route::get('students','App\Http\Controllers\StudentController@index');
+Route::get('students','App\Http\Controllers\StudentController@index2');
 
 //List Single Article
 Route::get('student/{id}','App\Http\Controllers\StudentController@show');

@@ -27,7 +27,7 @@ class CourseController extends Controller
        $course->id       =$request->input('course_id');
        $course->Name    =$request->input('Name');
        $course->Code     =$request->input('Code');
-       $course->Descripton     =$request->input('Descripton');
+       $course->Description     =$request->input('Description');
        if($course->save()){
            return new CourseResource($course);
        }

@@ -10,7 +10,30 @@ use Illuminate\Support\Facades\DB;
 
 class StudentController extends Controller
 {
-    public function index(){
+    public function index($id){
+        $students =  DB:: table ('students')
+        ->join('enrollment', function($join)  use($id){
+         $join->on('students.id', '=', 'enrollment.student')->where('enrollment.course','=',$id); })
+        -> select ('students.*')
+        ->get();
+        error_log($students);
+         return StudentResource::collection($students);
+     }
+     public function view($id){
+        // $students =  DB:: table ('students')
+        // ->join('enrollment', function($join)  use($id){
+        //  $join->on('student.id','=','enrollment.student')->where($id, '<>', 'enrollment.course'); })
+        // -> select ('students.*')
+        // ->get();
+        $students =  DB:: table ('students')
+        ->join('enrollment', function($join)  use($id){
+         $join->on('student.id','=','enrollment.student')->whereNotExists($id, '=', 'enrollment.course'); })
+        -> select ('students.*')
+        ->get();
+        error_log($students);
+         return StudentResource::collection($students);
+     }
+    public function index2(){
          $students = Student::orderBy('id','asc')->get();
         //  $students=DB::table('students')->where('Identifier', '=', '2018114')->get();
         return StudentResource::collection($students);
