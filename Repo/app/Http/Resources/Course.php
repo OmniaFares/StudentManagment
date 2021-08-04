@@ -14,8 +14,6 @@ class Course extends JsonResource
      */
     public function toArray($request)
     {
-        //Get All data from table
-//        return parent::toArray($request);
 
 return[
     'id'             =>$this->id,

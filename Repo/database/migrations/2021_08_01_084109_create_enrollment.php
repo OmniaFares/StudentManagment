@@ -14,6 +14,7 @@ class CreateEnrollment extends Migration
     public function up()
     {
         Schema::create('enrollment', function (Blueprint $table) {
+            $table->timestamps();
             $table->unsignedBigInteger('student');
             $table->foreign('student')->references('id')->on('students')->onDelete('cascade')->onUpdate('cascade');
             $table->unsignedBigInteger('course');

@@ -18,6 +18,7 @@
     </head>
     <body>
     <div id="app">
+
         <navbar></navbar>
         <div class="container">
             <student ></student>

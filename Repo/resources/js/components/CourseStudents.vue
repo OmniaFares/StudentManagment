@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h4>Students That have Enrolled in {{ courseCode }}</h4>
+    <h4>Students That have Been Enrolled in {{ courseCode }}</h4>
     <div class="row">
       <div class="col-lg-6">
         <div class="main-card mb-3 card">
@@ -31,10 +31,9 @@
 
     <h4>Students That haven't Enrolled in {{ courseCode }}</h4>
     <div class="row">
-      <div class="col-lg-6">
-        <div class="main-card mb-3 card">
+      <div class="col-lg-8">
+        <div class="main-card mb-5 card">
           <div class="card-body">
-
             <table class="mb-0 table table-bordered">
               <thead>
                 <tr>
@@ -43,6 +42,7 @@
                   <th>Last Name</th>
                   <th>Identifier</th>
                   <th>E-mail</th>
+                  <th>Enroll</th>
                 </tr>
               </thead>
               <tr v-for="student in students2" v-bind:key="student.FirstName">
@@ -51,6 +51,7 @@
                 <td>{{ student.LastName }}</td>
                 <td>{{ student.Identifier }}</td>
                 <td>{{ student.Email }}</td>
+                <td> <button class="btn badge-success" @click="Enroll(student)">Enroll</button> </td>
               </tr>
             </table>
           </div>
@@ -88,7 +89,12 @@ export default {
         Level:   '',
         Program: '',
       },
+      enroll:{
+        student:'',
+        course:''
+      },
       pagination: {},
+      student_id: '',
     };
   },
   created() {
@@ -127,6 +133,30 @@ export default {
       };
       this.pagination = pagination;
     },
+    addStudent(){
+                    //Add
+                    fetch('/api/studentEnroll',{
+                        method:     'post',
+                        body:       JSON.stringify(this.enroll),
+                        headers:{
+                            'content-type':'application/json'
+                        }
+                    })
+                        .then(res => res.json())
+                        .then(data =>{
+                    this.enroll.student=  '';
+                    this.enroll.course=  '';
+                            this.fetchStudents();
+                            this.fetchStudents2();
+                        })
+                        .catch(err => console.log(err));
+                
+            },
+            Enroll(student){
+                this.enroll.student = student.id;
+                this.enroll.course = this.id;
+                    this.addStudent();
+            },
   },
 };
 </script>

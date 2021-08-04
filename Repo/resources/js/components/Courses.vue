@@ -1,4 +1,6 @@
- <template> 
+
+ <template>
+ 
 <div>
     <link href="/css/main.css" rel="stylesheet">
         <br><br>
@@ -7,6 +9,14 @@
             <div class="main-card mb-3 card">
                 <div class="card-body">
                     <h5 class="card-title">Courses</h5>
+
+                    <label class ="btn badge-success">Search by Course Name</label> 
+                    <form @submit.prevent="filterCourse(valueToSearch)" style="display:inline"> 
+                        <input type ="text" v-model="valueToSearch" >
+                    <button class ="btn badge-success" type="submit" >Go</button> 
+                    <button class ="btn badge-success" @click.prevent="fetchCourses('')" >All</button> 
+                    </form>
+
                     <table class="mb-0 table table-bordered">
                         <thead>
                             <tr>
@@ -59,7 +69,6 @@
                 pagination: {},
                 editcourse:       false,
                 valueToSearch: '',
-                selected:''
             }
         },
         created(){
@@ -141,9 +150,9 @@
                         this.course.Code=  course.Code;
                         this.course.Description= course.Description;
                     },
-            filterCourse(selected,valueToSearch){
+            filterCourse(valueToSearch){
                         let vm = this; 
-                        fetch(`api/courses/${selected}/${valueToSearch}`)
+                        fetch(`api/Scourses/${valueToSearch}`)
                             .then(res => res.json())
                             .then(res => {
                                 this.courses = res.data;
