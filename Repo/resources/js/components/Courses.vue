@@ -1,6 +1,4 @@
-
- <template>
- 
+ <template> 
 <div>
     <link href="/css/main.css" rel="stylesheet">
         <br><br>

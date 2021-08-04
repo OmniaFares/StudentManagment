@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h4>Students That have Been Enrolled in {{ courseCode }}</h4>
+    <h4>Students That have Enrolled in {{ courseCode }}</h4>
     <div class="row">
       <div class="col-lg-6">
         <div class="main-card mb-3 card">

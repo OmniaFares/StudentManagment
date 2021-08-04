@@ -3,11 +3,22 @@
 namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Course;
+use App\Models\LevelCourses;
 use App\Http\Resources\Course as CourseResource;
+use App\Http\Resources\LevelCourses as LevelCoursesResource;
 use Illuminate\Support\Facades\DB;
 
 class CourseController extends Controller
 {
+    public function getCoursesPerLevel($id){
+        $courses =  DB:: table ('courses')
+        ->join('levelcourses', function($join)  use($id){
+         $join->on('courses.id', '=', 'levelcourses.course')->where('levelcourses.level','=',$id); })
+        -> select ('courses.*')
+        ->get();
+        error_log($courses);
+         return CourseResource::collection($courses);
+    }
      public function index($id){
        $courses =  DB:: table ('courses')
        ->join('enrollment', function($join)  use($id){
@@ -19,8 +30,7 @@ class CourseController extends Controller
     }
     public function index2(){
         $courses = Course::orderBy('id','asc')->get();
-       return CourseResource::collection($courses);
-   }
+       return CourseResource::collection($courses);   }
    public function store(Request $request)
    {
        $course = $request->isMethod('put') ? Course::findOrFail($request->course_id) : new Course();
@@ -30,6 +40,15 @@ class CourseController extends Controller
        $course->Description     =$request->input('Description');
        if($course->save()){
            return new CourseResource($course);
+       }
+    } 
+   public function storeCoursePerLevel(Request $request)
+   {
+       $item = $request->isMethod('put') ? LevelCourses::findOrFail($request->course_id) : new LevelCourses();
+       $item->Level    =$request->input('Level');
+       $item->course     =$request->input('course');
+       if($item->save()){
+           return new LevelCoursesResource($item);
        }
 
    } 

@@ -2,10 +2,13 @@ import Vue from 'vue';
 import VueRouter from 'vue-router';
 import StudentCourses from './components/StudentCourses.vue';
 import List from './components/List.vue';
+import Levels from './components/Levels.vue';
 Vue.use(VueRouter);
 const routes=[
     {path:"/StudentCourses/:studentID/:id" , component:require('./components/StudentCourses.vue').default},
     {path:"/CourseStudents/:courseCode/:id" , component:require('./components/CourseStudents.vue').default},
+    {path:"/LevelCourses/:id" , component:require('./components/LevelCourses.vue').default},
+    {path:"/ProgramCourses/:programCode/:id" , component:require('./components/ProgramCourses.vue').default},
     {path:'/Vstudents' , component:require('./components/List.vue').default},
     {path:'/Vcourses' , component:require('./components/Courses.vue').default},
     {path:'/Vlevels' , component:require('./components/Levels.vue').default},
