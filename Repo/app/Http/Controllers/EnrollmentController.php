@@ -9,16 +9,13 @@ use Illuminate\Support\Facades\DB;
 
 class EnrollmentController extends Controller
 {
-    public function Enroll(Request $request)
-    {
-        error_log("hna");
-        $enroll =  $request->isMethod('put') ?  : new Enrollment();
-        $enroll->student       =$request->input('student');
-        $enroll->course    =$request->input('course');
-
-        if($enroll->save()){
-            return new EnrollmentResource($enroll);
-
-        }
+    public function index($id){
+       $courses =  DB:: table ('enrollment')
+       ->join('courses', function($join)  use($id){
+        $join->on('courses.id', '=', 'enrollment.course')->where('enrollment.student','=',$id); })
+       -> select ('courses.Name')
+       ->get();
+       error_log($courses);
+        return EnrollmentResource::collection($courses);
     }
 }

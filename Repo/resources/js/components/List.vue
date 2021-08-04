@@ -64,10 +64,12 @@
                  <input type="text" class="form-control" placeholder="level" v-model="student.Level">
                  <input type="text" class="form-control" placeholder="program" v-model="student.Program">
             </div>
+            <!-- <button type="submit" class="btn badge-success">Save</button> -->
             <button type="submit" class="btn badge-success" > Update</button>
             <button type="submit" class="btn badge-success" >Add new Student</button>
         </form>
         <br><br>
+       
 </div>
 </template>
 <script>

@@ -15,6 +15,8 @@ class Enrollment extends JsonResource
      */
     public function toArray($request)
     {
+        //Get All data from table
+//        return parent::toArray($request);
 
 return[
     'student'     =>$this->student,
