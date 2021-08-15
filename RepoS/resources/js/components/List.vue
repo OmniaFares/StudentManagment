@@ -60,7 +60,7 @@
                  <input type="text" class="form-control" placeholder="last name" v-model="student.LastName" required>
                 <input type="text" class="form-control" placeholder="identifier" v-model="student.Identifier" required>
                  <input type="text" class="form-control" placeholder="email" v-model="student.Email" required>
-                <input type="text" class="form-control" placeholder="date Of Birth" v-model="student.DateOfBirth" required>
+                <input type="date" class="form-control" placeholder="date Of Birth" v-model="student.DateOfBirth" required>
                  <label>Level</label>
                 <select placeholder=" Level" style="width:200px;font-family: cursive; " v-model="student.Level" required> 
                         <option name="1" > 1</option> 
@@ -75,7 +75,7 @@
                 </select> 
             </div>
             <!-- <button type="submit" class="btn badge-success">Save</button> -->
-            <button type="submit" class="btn badge-success" > Update</button>
+            <button type="submit" class="btn badge-success" v-show="editstudent"> Update</button>
             <button type="submit" class="btn badge-success" >Add new Student</button>
         </form>
         <br><br>

@@ -36,7 +36,7 @@
                 <input type="text" class="form-control" placeholder="name" v-model="program.Name" required>
                  <input type="text" class="form-control" placeholder="Description" v-model="program.Description" required>
             </div>
-            <button type="submit" class="btn badge-success" >Update</button>
+            <button type="submit" class="btn badge-success" v-show="editprogram" >Update</button>
             <button type="submit" class="btn badge-success" >Add new Program</button>
             
         </form>

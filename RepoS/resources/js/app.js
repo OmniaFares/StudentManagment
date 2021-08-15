@@ -12,7 +12,8 @@ const routes=[
     {path:'/Vstudents' , component:require('./components/List.vue').default},
     {path:'/Vcourses' , component:require('./components/Courses.vue').default},
     {path:'/Vlevels' , component:require('./components/Levels.vue').default},
-    {path:'/Vprograms' , component:require('./components/Programs.vue').default}
+    {path:'/Vprograms' , component:require('./components/Programs.vue').default},
+    {path:'/GradeSetup/:courseIDD' , component:require('./components/GradeSetup.vue').default}
 ]
 const router = new VueRouter({
     routes:routes,

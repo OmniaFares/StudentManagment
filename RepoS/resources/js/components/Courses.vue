@@ -26,6 +26,7 @@
                                 <th>Description</th>
                                 <th>Update</th>
                                 <th>Delete</th>
+                                <th>Grade Setup</th>
                             </tr>
                         </thead>
                         <tr v-for="course in courses" v-bind:key="course.id">
@@ -37,6 +38,7 @@
                                 <th>{{course.Description}}</th>
                                 <td> <button class="btn badge-success" @click="editCourse(course)">Edit</button> </td>
                                <td> <button class="btn badge-success" @click="deleteCourse(course.id)">Delete</button> </td>
+                               <td> <router-link :to="`/GradeSetup/${course.id}`">Grade Setup</router-link> </td>
                         </tr>
                     </table>
                 </div>
@@ -63,7 +65,7 @@
                 </select> 
 
             </div>
-            <button type="submit" class="btn badge-success" >Update</button>
+            <button type="submit" class="btn badge-success"  v-show="editcourse">Update</button>
             <button type="submit" class="btn badge-success" >Add new Course</button>
         </form>
         <br><br>  

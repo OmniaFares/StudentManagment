@@ -30,7 +30,7 @@
 export default {
   data() {
     return {
-      id: this.$route.params.id,
+      courseId: this.$route.params.id,
        courses: [],
                 course: {
                     id: '',
@@ -51,7 +51,7 @@ export default {
   methods: {
     fetchCourses(page_url) {
       let vm = this;
-      page_url = page_url || "/api/levels/" + this.id;
+      page_url = page_url || "/api/levels/" + this.courseId;
       fetch(page_url)
         .then((res) => res.json())
         .then((res) => {
