@@ -58,9 +58,41 @@
         </div>
       </div>
     </div>
-    <h4>Grades</h4>
 
-  </div>
+<table  cellspacing="0" cellpadding="0" style="border-spacing:0;" id="QMSTable" class="mb-0 table table-bordered">
+
+<tr>
+    <td class="divCenMid" colspan = "4"> Grades</td>
+</tr>
+
+
+  <tr>
+    <td class="allbdrCenMid">#</td>
+    <td class="allbdrCenMid">Name</td>
+    <td class="allbdrLtMid"> Identifier</td>
+    <td class="allbdrCenMid"  v-for="item in items" v-bind:key="item.Name">{{ item.Name }} ( {{ item.Max }} )</td>
+  
+
+</tr>
+  <tr v-for="student in students" v-bind:key="student.FirstName">
+                <td class="allbdrCenMid">{{ student.id }}</td>
+                <td class="allbdrCenMid">{{ student.FirstName }} {{ student.LastName }}</td>
+                <td class="allbdrCenMid">{{ student.Identifier }}</td>
+        
+              <template   v-for="grade in grades">
+            <td class="allbdrCenMid" v-bind:key="grade.id" v-if="grade.studentID === student.id"  >
+        
+        <input id='${grade.id}' type="text"  value=""  v-model="grade.Value" class="nobdrCenMid" style="overflow:hidden; " name="Q2CALC"/>
+          </td>
+          </template>             
+  </tr>
+
+</table>
+<input type="button" @click="fillHidTable()" name=PatientDatabase value="Export Data to Excel">
+
+</div>
+
+
 </template>
 <script>
 export default {
@@ -94,6 +126,25 @@ export default {
         student:'',
         course:''
       },
+      grades: [],
+      grade: {
+        id:'',
+        courseID: '',
+        studentID: '',
+        Name:'',
+        Value: '',
+        Max: '',
+      },
+      grade_id:'',
+       items: [],
+      item: {
+        id:'',
+        courseID: '',
+        Name:'',
+        Description: '',
+        Max: '',
+      },
+      item_id:'',
       pagination: {},
       student_id: '',
     };
@@ -101,39 +152,29 @@ export default {
   created() {
     this.fetchStudents();
     this.fetchStudents2();
+    this.fetchItems();
+     this.fetchGrades();
   },
   methods: {
     fetchStudents(page_url) {
-      let vm = this;
       page_url = page_url || "/api/students/" + this.id;
       fetch(page_url)
         .then((res) => res.json())
         .then((res) => {
           this.students = res.data;
-          vm.makePagination(res.meta, res.links);
         })
         .catch((err) => console.log(err));
     },
     fetchStudents2(page_url) {
-      let vm = this;
       page_url = page_url || "/api/students2/" + this.id;
       fetch(page_url)
         .then((res) => res.json())
         .then((res) => {
           this.students2 = res.data;
-          vm.makePagination(res.meta, res.links);
         })
         .catch((err) => console.log(err));
     },
-    makePagination(meta, links) {
-      let pagination = {
-        current_page: meta.current_page,
-        last_page: meta.last_page,
-        next_page_url: links.next,
-        prev_page_url: links.prev,
-      };
-      this.pagination = pagination;
-    },
+ 
     addStudent(){
                     //Add
                     fetch('/api/studentEnroll',{
@@ -158,6 +199,48 @@ export default {
                 this.enroll.course = this.id;
                     this.addStudent();
             },
+            fetchItems(page_url) {
+      page_url = page_url || "/api/Items/"+this.id;
+      fetch(page_url)
+        .then((res) => res.json())
+        .then((res) => {
+          this.items = res.data;
+        })
+        .catch((err) => console.log(err));
+    },   
+     fetchGrades(){
+      fetch(`/api/grades/${this.id}`)
+        .then(res => res.json())
+        .then(res => {
+          this.grades = res.data;
+        })
+        .catch((err) => console.log(err));
+        console.log(this.grades);
+    },
+     fillHidTable(){
+var htqf; //-- hidden field
+var rf; //-- retrieved field
+for ( var i = 1; i < this.grades.length; i++ ) {
+    rf = "htqf"+i;
+    document.getElementById(rf).innerHTML = document.getElementById(this.grades[i-1].id).value;
+}
+tableToExcel('hidTable', 'Analysis Results');
+var tableToExcel = (function() {
+var uri = 'data:application/vnd.ms-excel;base64,'
+        , template = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>{worksheet}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body><table>{table}</table></body></html>'
+        , base64 = function(s) { return window.btoa(unescape(encodeURIComponent(s))) }
+        , format = function(s, c) { return s.replace(/{(\w+)}/g, function(m, p) { return c[p]; }) }
+return function(table, name) {
+    if (!table.nodeType) table = document.getElementById(table)
+    var ctx = {worksheet: name || 'Worksheet', table: table.innerHTML}
+    window.location.href = uri + base64(format(template, ctx))
+}
+})()
+}
   },
+  
 };
+
+
+
 </script>

@@ -88,18 +88,17 @@ export default {
   },
   methods: {
     fetchStudents(page_url) {
-      let vm = this;
       page_url = page_url || '/api/courses/'+this.id;
       fetch(page_url)
         .then((res) => res.json())
         .then((res) => {
           this.courses = res.data;
-          vm.makePagination(res.meta, res.links);
         })
         .catch((err) => console.log(err));
     },
     fetchGrades(courseid){
-      let vm = this;
+          this.totalValue=0;
+          this.totalMax=0;
       this.boolShow = true;
       fetch(`/api/grades/${this.id}/${courseid}`)
         .then(res => res.json())

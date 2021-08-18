@@ -28,4 +28,8 @@ class GradeController extends Controller
            return new GradeResource($grade);
        }
     } 
+    public function fetchGradesForCourse($id){
+        $grades = Grade::where('courseID',$id)->get();
+        return GradeResource::collection($grades);            
+    }
 }

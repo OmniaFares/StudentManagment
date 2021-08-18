@@ -3,6 +3,10 @@ import VueRouter from 'vue-router';
 import StudentCourses from './components/StudentCourses.vue';
 import List from './components/List.vue';
 import Levels from './components/Levels.vue';
+import Handsontable from 'handsontable';
+import 'handsontable/dist/handsontable.full.css';
+
+
 Vue.use(VueRouter);
 const routes=[
     {path:"/StudentCourses/:studentID/:id" , component:require('./components/StudentCourses.vue').default},
@@ -30,4 +34,3 @@ Vue.component('student', require('./components/Main.vue').default);
     //  el: '#app',
      router
  }).$mount("#app");
- 

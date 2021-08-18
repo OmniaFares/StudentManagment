@@ -104,24 +104,20 @@
         },
         methods:{
             fetchCourses(page_url) {
-                let vm = this;
                 page_url = page_url || '/api/courses';
                 fetch(page_url)
                     .then((res) => res.json())
                     .then((res) => {
                     this.courses = res.data;
-                    vm.makePagination(res.meta, res.links);
                     })
                     .catch((err) => console.log(err));
                 },
                 fetchPrograms(page_url) {
-                let vm = this;
                 page_url = page_url || '/api/programs';
                 fetch(page_url)
                     .then((res) => res.json())
                     .then((res) => {
                     this.programs = res.data;
-                   // vm.makePagination(res.meta, res.links);
                     })
                     .catch((err) => console.log(err));
                 },
@@ -199,12 +195,10 @@
                         this.course.Description= course.Description;
                     },
             filterCourse(valueToSearch){
-                        let vm = this; 
                         fetch(`api/Scourses/${valueToSearch}`)
                             .then(res => res.json())
                             .then(res => {
                                 this.courses = res.data;
-                                vm.makePagination(res.meta, res.links);
                             })
                             .catch(err => console.log(err));
 

@@ -115,3 +115,6 @@ Route::delete('item/{courseID}/{Name}','App\Http\Controllers\ItemController@dest
 Route::get('grades/{id}/{courseid}','App\Http\Controllers\GradeController@show');
 
 Route::put('grade','App\Http\Controllers\GradeController@store');
+
+//fetch all grades for specific course id
+Route::get('grades/{id}','App\Http\Controllers\GradeController@fetchGradesForCourse');
