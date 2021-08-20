@@ -6,6 +6,8 @@
 
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <script>window.Laravel= { csrfToken: '{{ csrf_token() }}' }</script>
+        <script src="https://unpkg.com/xlsx@0.15.1/dist/xlsx.full.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.11/vue.min.js"></script>
 
         
 
@@ -19,6 +21,33 @@
 .allbdrCenTop{border:.75pt solid windowtext;color:#000;font-family:Arial,sans-serif;font-size:10pt;font-style:normal;font-weight:400;text-align:center;vertical-align:top;margin:0;}
 .allbdrLtMid{border:.75pt solid windowtext;color:#000;font-family:Arial,sans-serif;font-size:10pt;font-style:normal;font-weight:400;text-align:left;vertical-align:middle;margin:0;}
 .allbdrLtTop{border:.75pt solid windowtext;color:#000;font-family:Arial,sans-serif;font-size:10pt;font-style:normal;font-weight:400;text-align:left;vertical-align:top;margin:0;}
+
+
+
+.table-wrapper {
+  max-width: 700px;
+  overflow: scroll;
+}
+
+table {
+  position: relative;
+  border: 1px solid #ddd;
+  border-collapse: collapse;
+}
+
+td, th {
+  white-space: nowrap;
+  border: 1px solid #ddd;
+  padding: 20px;
+}
+
+th {
+  background-color: #eee;
+}
+
+tbody tr td:first-of-type {
+  background-color: #eee;
+}   
 </style>
 
         <!-- Fonts -->
