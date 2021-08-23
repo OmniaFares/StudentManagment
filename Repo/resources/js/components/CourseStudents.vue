@@ -78,15 +78,15 @@
                   <template   v-for="grade in grades">
                   <td class="allbdrCenMid" v-bind:key="grade.id" v-if="grade.studentID === student.id"  >
                 <th v-show="false"> {{grade.Value}}</th> 
-                  <input type="number"  value=""  v-model="grade.Value" class="nobdrCenMid" style="overflow:hidden; " min="0" :max='grade.Max' required>
+                  <input  type="number"  value=""  v-model="grade.Value" class="nobdrCenMid" style="overflow:hidden; " min="0" :max='grade.Max' required @blur="saveGrades()">
                   </td>
                   </template> 
                    <td class="allbdrCenMid">{{ student.totalValue }}</td>           
     </tr>
 </table>
 <br>
-<button type="submit" class="btn badge-success" >Save</button>
 <button class="btn badge-success" @click="ExportExcel('xls')">Export Table to Excel </button>
+<h6>You Should Save the Changes Before Exporting To Excel</h6>
 </form>
 </div>
 </template>
@@ -96,14 +96,7 @@ export default {
     return {
       courseCode: this.$route.params.courseCode,
       id: this.$route.params.id,
-      exportData:[],
-      exportData:{
-        id:'',
-        FirstName: '',
-        LastName: '',
-        Identifier: '',
-        grade:''
-      },
+      isActive: true,
       students: [],
       student: {
         id: '',
@@ -159,9 +152,14 @@ export default {
     this.fetchStudents2();
     this.fetchItems();
      this.fetchGrades();
+      this.students.forEach(student=>{
+            
+     console.log(student.totalValue);
+          })   
   },
   methods: {
     ExportExcel(type, fn, dl) {
+      this.isActive = true;
       var elt = this.$refs.exportable_table;
       var wb = XLSX.utils.table_to_book(elt, {sheet:"Sheet JS"});
       return dl ?
@@ -251,7 +249,9 @@ addStudent(){
           })     
     },
     saveGrades(){
+      this.isActive = false,
   this.grades.forEach(item=>{
+    if( item['Value'] <=  item['Max']){
              this.grade.grade_id = item['id'];
                         this.grade.id =item['id'];
                         this.grade.Name=  item['Name'];
@@ -278,6 +278,9 @@ addStudent(){
                             this.grade.Value=  '';
                                 })
                                 .catch(err => console.log(err));
+    }else{
+      alert("Value must be less than or equal to Max");
+    }
           })
       this.fetchGrades();         
     }

@@ -9,12 +9,19 @@ use App\Http\Resources\Enrollment as EnrollmentResource;
 use App\Models\Grade;
 use App\Http\Resources\Grade as GradeResource;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class ItemController extends Controller
 {
 
    public function store(Request $request)
    {
+        // $validator = Validator::make($request->all(), [
+        //     'Name'=>"unique:items,Name"
+        // ]);
+        // if ($validator->fails()) {
+        //     return response()->json(['Email must be unique']);
+        // } else {
         $item = $request->isMethod('put') ? Item::findOrFail($request->item_id)  : new Item();
         $item->id       =$request->input('item_id');
         $item->courseID       =$request->input('courseID');
@@ -28,25 +35,27 @@ class ItemController extends Controller
 
         $students = Enrollment::where('course', $item->courseID)->get();
         $array = json_decode($students);
-        foreach ($array as $key => $jsons) { // This will search in the 2 jsons
-            $grade = $request->isMethod('put') ? Grade::where('courseID',$request->courseID)->where('Name',$request->Name)->first(): new Grade();
+        foreach ($array as $jsons) { 
+            $grade = $request->isMethod('put') ? Grade::where('courseID',$request->courseID)->where('studentID',$jsons->student)->where('Name',$request->Name)->first(): new Grade();
             $grade->courseID       =$item->courseID  ;
-            $grade->Value            =        0;
+            if($request->isMethod('post')){
+            $grade->Value   =    0;
+            }
             $grade->Name=$item->Name;
             $grade->Max=$item->Max;
-            foreach($jsons as $key => $value) {
-                if($key=='student'){
+            if($request->isMethod('post')){
+            foreach($jsons as $key2 => $value) {
+                if($key2=='student'){
                 $grade->studentID    =$value;
                 }
          }
-       error_log($grade);
-       $grade->save();
+        }
+            $grade->save();
        }
-
         if($item->save()){
-            error_log($item);
              return new ItemResource($item);
     }
+//}
 
     } 
 

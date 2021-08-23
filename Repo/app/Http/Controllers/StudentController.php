@@ -8,6 +8,8 @@ use App\Models\Student;
 use App\Http\Resources\Student as StudentResource;
 use Illuminate\Support\Facades\DB;
 
+use Illuminate\Support\Facades\Validator;
+
 class StudentController extends Controller
 {
     public function index($id)
@@ -37,11 +39,11 @@ class StudentController extends Controller
     public function index2()
     {
         $students = Student::orderBy('id', 'asc')->get();
-        //  $students=DB::table('students')->where('Identifier', '=', '2018114')->get();
         return StudentResource::collection($students);
     }
     public function store(Request $request)
     {
+        
         $student = $request->isMethod('put') ? Student::findOrFail($request->student_id) : new Student();
         $student->id       = $request->input('student_id');
         $student->FirstName    = $request->input('FirstName');
@@ -52,26 +54,27 @@ class StudentController extends Controller
         $student->Level     = $request->input('Level');
         $student->Program     = $request->input('Program');
 
+        // $validator = Validator::make($request->all(), [
+        //     'Email'=>"unique:students,Email"
+        // ]);
+        // if ($validator->fails()) {
+        //     return response()->json(['Email must be unique']);
+        // } else {
         if ($student->save()) {
             return new StudentResource($student);
         }
+   // }
     }
 
     public function show($id)
     {
-        //Get Single Article
         $student = Student::findOrFail($id);
-
-        //Return Single Article as a resource
         return new StudentResource($student);
     }
 
     public function destroy($id)
     {
-        //Get Single Article
         $student = Student::findOrFail($id);
-
-        //Delete Single Article with a resource
         if ($student->delete()) {
             return new StudentResource($student);
         }

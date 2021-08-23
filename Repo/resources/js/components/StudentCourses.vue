@@ -19,7 +19,7 @@
                                         <template   v-for="grade in grades">
                               <td class="allbdrCenMid" v-bind:key="grade.id" v-if="grade.courseID === course.id"  >
                               <th> {{grade.Name}}/ {{grade.Max}}</th> 
-                                <input type="number"  value=""  v-model="grade.Value" class="nobdrCenMid" style="overflow:hidden; " min="0" :max='grade.Max' required>
+                                <input type="number" @blur="saveGrades()" value=""  v-model="grade.Value" class="nobdrCenMid" style="overflow:hidden; " min="0" :max='grade.Max' required>
                                 </td>
                                 </template>
                                 <template>
@@ -31,7 +31,7 @@
                         </div>
                     </div>
                 </div>
-                <button type="submit" class="btn badge-success" >Save</button>
+                <!-- <button type="submit" class="btn badge-success" >Save</button> -->
                 </form>
         </div>
   
