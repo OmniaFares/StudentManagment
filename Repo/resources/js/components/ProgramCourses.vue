@@ -15,8 +15,8 @@
                 </tr>
               </thead>
               <tr v-for="course in courses" v-bind:key="course.Name">
-                <th>{{ course.Name }}</th>
-                <th>{{ course.Code }}</th>
+                <td>{{ course.Name }}</td>
+                <td>{{ course.Code }}</td>
               </tr>
             </table>
           </div>
